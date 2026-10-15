@@ -1,0 +1,10 @@
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.db
+*.db-journal
+strand_memory.json
+.env
+.vscode/
+.DS_Store

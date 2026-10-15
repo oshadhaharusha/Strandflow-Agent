@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>StrandFlow | Personal Learning & Project Decider</title>
+  <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
+  <!-- Header -->
+  <header class="border-b border-slate-800 px-6 py-4 flex justify-between items-center bg-slate-900/60">
+    <div class="flex items-center gap-3">
+      <span class="bg-orange-500 text-slate-950 font-mono font-bold px-2.5 py-1 rounded text-sm">&gt; strands-decider</span>
+      <h1 class="text-xl font-bold tracking-tight">StrandFlow: Personal Learning &amp; Project Agent</h1>
+    </div>
+    <button id="ttsToggle" class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded border border-slate-700">
+      🔊 Voice Output: ON
+    </button>
+  </header>
+
+  <!-- Main Grid -->
+  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 max-w-7xl w-full mx-auto">
+    
+    <!-- Left Column: Live Conversation & Voice -->
+    <section class="lg:col-span-7 flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
+      <div id="chatBox" class="flex-1 p-5 space-y-4 overflow-y-auto max-h-[65vh]">
+        <div class="bg-slate-800/80 border border-slate-700 rounded-lg p-4 text-sm leading-relaxed">
+          <p class="font-semibold text-orange-400 mb-1">StrandFlow Decider</p>
+          Hey! Talk to me whenever you have a new software, video, photo, or design idea, want to break down a tough CS/math concept, or need help deciding what to focus on next.
+        </div>
+      </div>
+
+      <!-- Quick Action Prompts -->
+      <div class="px-4 py-2 bg-slate-950/50 border-t border-slate-800 flex gap-2 overflow-x-auto text-xs">
+        <button onclick="quickSend('I have 45 minutes and medium energy. What should I focus on next?')" class="bg-orange-500/10 text-orange-400 border border-orange-500/30 px-3 py-1.5 rounded-full whitespace-nowrap hover:bg-orange-500/20">
+          ⚡ Decide What's Next
+        </button>
+        <button onclick="quickSend('I have an idea for a cinematic campus video reel and a Python backend project. Help me break them down.')" class="bg-slate-800 text-slate-300 px-3 py-1.5 rounded-full whitespace-nowrap hover:bg-slate-700">
+          🎬 Capture Creative/Dev Idea
+        </button>
+        <button onclick="quickSend('Create a study plan for mastering Dynamic Programming and Graph Algorithms this week.')" class="bg-slate-800 text-slate-300 px-3 py-1.5 rounded-full whitespace-nowrap hover:bg-slate-700">
+          📚 Build Study Plan
+        </button>
+      </div>
+
+      <!-- Input Bar with Mic -->
+      <div class="p-4 bg-slate-900 border-t border-slate-800 flex gap-3 items-center">
+        <button id="micBtn" onclick="toggleMic()" class="p-3 rounded-full bg-slate-800 hover:bg-orange-500 hover:text-slate-950 transition border border-slate-700" title="Speak to Agent">
+          🎤
+        </button>
+        <input id="userInput" type="text" placeholder="Speak or type an idea, concept question, or 'What should I do next?'..." 
+               class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-orange-500"
+               onkeydown="if(event.key==='Enter') sendMessage()">
+        <button onclick="sendMessage()" class="bg-orange-500 hover:bg-orange-400 text-slate-950 font-semibold px-5 py-3 rounded-lg text-sm transition">
+          Send
+        </button>
+      </div>
+    </section>
+
+    <!-- Right Column: Persistent Memory Dashboard -->
+    <aside class="lg:col-span-5 space-y-6">
+      <!-- Active Projects & Creative Strands -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-orange-400 mb-3">🚀 Active Project &amp; Creative Strands</h2>
+        <div id="projectsList" class="space-y-3 text-sm"></div>
+      </div>
+
+      <!-- Personalized Learning Strands -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-emerald-400 mb-3">🧠 Learning &amp; Study Roadmaps</h2>
+        <div id="studyList" class="space-y-3 text-sm"></div>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    let ttsEnabled = true;
+    const chatBox = document.getElementById('chatBox');
+    const userInput = document.getElementById('userInput');
+
+    document.getElementById('ttsToggle').onclick = (e) => {
+      ttsEnabled = !ttsEnabled;
+      e.target.innerText = ttsEnabled ? "🔊 Voice Output: ON" : "🔇 Voice Output: OFF";
+      if (!ttsEnabled) window.speechSynthesis.cancel();
+    };
+
+    function renderMemory(mem) {
+      const pList = document.getElementById('projectsList');
+      pList.innerHTML = (mem.projects || []).map(p => `
+        <div class="p-3.5 bg-slate-950 border border-slate-800 rounded-lg">
+          <div class="flex justify-between items-center mb-1">
+            <span class="font-semibold text-slate-100">${p.title}</span>
+            <span class="text-xs px-2 py-0.5 rounded bg-orange-500/20 text-orange-300">${p.category} • P${p.priority}</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-1">👉 <strong class="text-slate-200">Next Focus:</strong> ${p.next_step}</p>
+        </div>
+      `).join('') || '<p class="text-slate-500 text-xs">No active projects yet.</p>';
+
+      const sList = document.getElementById('studyList');
+      sList.innerHTML = (mem.study_goals || []).map(s => `
+        <div class="p-3.5 bg-slate-950 border border-slate-800 rounded-lg">
+          <div class="flex justify-between items-center mb-1">
+            <span class="font-semibold text-slate-100">${s.subject}</span>
+            <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">${s.current_level}</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-1">🎯 <strong class="text-slate-200">Current Milestone:</strong> ${s.current_focus}</p>
+        </div>
+      `).join('') || '<p class="text-slate-500 text-xs">Ask to learn a topic to generate a study roadmap.</p>';
+    }
+
+    async function sendMessage() {
+      const text = userInput.value.trim();
+      if (!text) return;
+      userInput.value = '';
+
+      chatBox.innerHTML += `
+        <div class="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3.5 text-sm ml-8">
+          <p class="font-semibold text-orange-300 mb-1">You</p>${text}
+        </div>`;
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      });
+      const data = await res.json();
+
+      chatBox.innerHTML += `
+        <div class="bg-slate-800/80 border border-slate-700 rounded-lg p-4 text-sm mr-8 whitespace-pre-line">
+          <p class="font-semibold text-orange-400 mb-1">StrandFlow Decider</p>${data.reply}
+        </div>`;
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      if (data.memory) renderMemory(data.memory);
+      if (ttsEnabled && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(data.reply.replace(/[*#`_]/g, ''));
+        window.speechSynthesis.speak(utter);
+      }
+    }
+
+    function quickSend(text) {
+      userInput.value = text;
+      sendMessage();
+    }
+
+    // Web Speech API Microphone Input
+    let recognition;
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRec();
+      recognition.lang = 'en-US';
+      recognition.onresult = (event) => {
+        userInput.value = event.results[0][0].transcript;
+        sendMessage();
+      };
+    }
+
+    function toggleMic() {
+      if (!recognition) return alert("Speech recognition works best in Chrome/Edge.");
+      recognition.start();
+    }
+
+    // Initial load
+    fetch('/api/memory').then(r => r.json()).then(renderMemory);
+  </script>
+</body>
+</html>
